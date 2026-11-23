@@ -23,8 +23,8 @@
 | 目标 | 验证 |
 |---|---|
 | macOS | 本机 Python 3.10 在独立用户目录验证安装、更新、迁移、回滚、卸载、并发边界和恢复。 |
-| Linux | 实现使用 libc 的 renameat2 和 flock。CI 已配置，未在本轮原生执行。 |
-| Windows 11 | 实现使用无覆盖 os.rename、重解析检查、单独的 msvcrt 锁和稳定 JSON 输出。CI 已配置，未在本轮原生执行。 |
+| Linux | 实现使用 libc 的 renameat2 和 flock。远程基线在 GitHub Actions 上覆盖 Ubuntu；本地 RC 修订未在该平台运行。 |
+| Windows 11 | 实现使用无覆盖 os.rename、重解析检查、单独的 msvcrt 锁和稳定 JSON 输出。远程基线在 GitHub Actions 上覆盖 Windows；本地 RC 修订未在该平台运行。 |
 | Codex、Claude Code | 用户级落点及各端适配由文件和回执验证。真实用户级新会话发现、模型选择及规则应用未实测。 |
 | Kiro CLI | 单独核对 CLI 3.3.0 的原生用户 Skills、slash 调用与自定义 agent 的资源边界。隔离文件验证通过，实际 CLI 注入未实测。 |
 | Kiro IDE | 核对本机 IDE 1.4.236、全局 Skills 与 IDE 导入限制。未运行 IDE 用户会话。 |
@@ -32,7 +32,7 @@
 
 ## E · 质量测试
 
-测试入口为 `python3 -B scripts/validate.py` 与 `python3 -B -m unittest discover -s tests -v`。静态检查包括编译语法、公开路径/敏感格式、Markdown 相对链接、完整性及版本一致。本机静态验证通过并覆盖 37 个发行文件，17 项标准库测试全部通过。测试使用真实 Git 与合成用户目录。独立评审另验证同名项目不激活和跨域会话的增量规则。
+测试入口为 `python3 -B scripts/validate.py` 与 `python3 -B -m unittest discover -s tests -v`。静态检查包括编译语法、公开路径/敏感格式、Markdown 相对链接、完整性及版本一致。初始 V3 基线有 17 项标准库测试；RC 复验结果见下文。测试使用真实 Git 与合成用户目录。独立评审另验证同名项目不激活和跨域会话的增量规则。
 
 ## F · 安全审计
 
@@ -48,4 +48,26 @@
 
 ## H · Git 交付
 
-独立分支为 `feat/v3-portable-agent-skill`，从 `920411c` 开始。交付为本地提交。只读远程查询确认主仓库 HEAD 仍为 `920411c`，参考仓库 HEAD 仍为 `38a24be`。远程没有新增本次功能分支。推送和合并需要本次明确授权。
+独立分支为 `feat/v3-portable-agent-skill`。RC 审查开始时只读确认远程功能分支为 `1454fe5c8f02235096ec04a5a060c9f8c0eafaff`，远程 `main` 为 `920411cf5c20192b0bf845cdc449af5aae9fbb3e`。本轮修订在本地功能分支交付。推送和合并须另行授权。
+
+## I · Release Candidate 安装前审查
+
+**Ready for Isolated Installation Testing**
+
+基线为远程 `1454fe5c8f02235096ec04a5a060c9f8c0eafaff`。经本机隔离安装复验的代码提交为 `02aa42c5a325580ed7f4b65945db084a4958616c`。记录本报告的提交仅补充审查证据。
+
+| 优先级 | 已核查问题及处理 |
+|---|---|
+| P0 | 本轮未发现。 |
+| P1 | README 和 INSTALL 的默认来源可能检出旧 `main`。已要求显式克隆功能分支并锁定经审查 SHA。 |
+| P1 | 在发行文件或平台入口发布前硬中断，原同目录残留会让下一次安装失败。暂存改到私有状态目录，并验证恢复后能重试。恢复仅清理日志时也会明确报告执行结果。 |
+| P1 | 空或缺失项目指纹、缺少核心规则或路由标签可被误报为健康发行。安装和回执完整性验证现在拒绝无效清单，运行期遇到空指纹也不激活。 |
+| P2 | 已登记项目在契约搬迁、Ruff 配置拆出等演进后只能看到笼统失败。新增逐项诊断及恢复流程。既有六个文件及字面标记不变。 |
+| P2 | 聚合迁移状态可能超过后续读取上限。预演阶段即检查同一上限。 |
+| P2 | 平台能力描述与旧报告不足以作为实际加载证据。补齐四端验证步骤，分别记录入口发现、自动选择、主动选择、正文读取和规则遵循。 |
+
+**实际测试。** macOS 上执行 `python3 -B scripts/validate.py` 校验 37 个发行文件，执行 `python3 -B -m unittest discover -s tests -v` 通过 28 项。针对固定代码提交执行四端隔离 dry-run、安装、状态校验、卸载，安装后的检测脚本在隔离登记的真实项目上命中全部 6 个指纹，样式路由仅新增所需两份规范。Qoder CLI 从隔离配置发现启用的 Skill。未登记环境返回不激活。合成 Git 工作树测试核对四端其他 Skill、已有用户指令和项目 AI 文件。实际 HiMate 工作树前后 8,480 个文件系统条目、Git 状态及快照记录一致。
+
+**CI。** 用户提供的截图显示基线 `1454fe5` 的 Verify Skill #1 成功，已从 GitHub 运行页核对该提交以及 Ubuntu、macOS、Windows × Python 3.10 / 3.13 六项作业配置。[Verify Skill #1](https://github.com/IUExcellently/himate-development-standards/actions/runs/45140210088)。本地 RC 修订尚无远程 CI 结果。Qoder 仅验证了 CLI 发现，本轮未运行 Codex、Claude、Kiro 或 Qoder IDE 的模型会话。显式调用、自动选择与规则遵循仍按 [客户端隔离测试](../integrations/verification.md) 分开验证。
+
+**安装建议。** 先对上述代码提交做隔离客户端验证。使用单独的测试用户或虚拟机并保留已有配置。不同文件系统间的原子发布会拒绝操作。本轮没有修改业务仓库、依赖、已确认的规范正文、真实用户级配置或远端分支。正式安装前等待修订提交的 CI 与目标客户端验证完成。
