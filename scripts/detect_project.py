@@ -1,13 +1,13 @@
 """先查私有登记，再验证真实 Git 根和公开结构指纹。"""
-import argparse
-import json
-from pathlib import Path
-import subprocess
 import sys
 
 if __name__ == "__main__":
     sys.dont_write_bytecode = True
 
+import argparse
+import json
+from pathlib import Path
+import subprocess
 from git_access import git_root
 from local_state import Local, ROOT
 

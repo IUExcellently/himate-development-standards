@@ -1,11 +1,13 @@
 """用户级生命周期入口，默认只输出计划。"""
+import sys
+
+sys.dont_write_bytecode = True
+
 import argparse
 import json
 from pathlib import Path
 import subprocess
-import sys
 
-sys.dont_write_bytecode = True
 if sys.version_info < (3, 10):
     sys.exit("需要 Python 3.10 或更高版本")
 

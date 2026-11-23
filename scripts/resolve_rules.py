@@ -1,13 +1,13 @@
 """从工作路径、文件、任务语义选规则，只输出建议。"""
-import argparse
-import json
-from pathlib import Path
-import re
 import sys
 
 if __name__ == "__main__":
     sys.dont_write_bytecode = True
 
+import argparse
+import json
+from pathlib import Path
+import re
 from detect_project import MANIFEST, detect
 from local_state import Local
 
