@@ -11,3 +11,5 @@
 记录五个可区分的阶段。安装回执及文件完整、客户端可发现、模型选中、正文被读、规则实际应用。后四项需有对应的运行证据，客户端已运行时可能需要重新开会话。不同部署的外部文件权限、Kiro agent 和云端支持各自生效。V3 没有注册 Hook 或修改平台权限。当前验证状态见 [V3 报告](../reports/v3-delivery.md)。
 
 机制来源 [Agent Skills](https://agentskills.io/specification) · [Codex](https://developers.openai.com/codex/skills) · [Claude Code](https://code.claude.com/docs/en/skills) · [Kiro](https://kiro.dev/docs/skills/) · [Qoder CLI](https://docs.qoder.com/cli/Skills) · [Qoder IDE](https://docs.qoder.com/extensions/skills)。
+
+正式安装前按 [真实客户端隔离验证](verification.md) 分层取证。自动选择和显式调用应分别在新会话测试。

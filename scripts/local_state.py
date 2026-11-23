@@ -1,5 +1,5 @@
 """用户级路径、文件安全和跨平台锁。"""
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 import hashlib
 import json
 import os
@@ -158,7 +158,7 @@ def parent_handle(path, home, create=False):
         os.close(fd)
 
 
-def publish_new(source, target, parent):
+def publish_new(source, target, source_parent, target_parent):
     """用系统提供的原子无覆盖重命名提交新文件。"""
     if os.name == "nt":
         os.rename(source, target)
@@ -176,16 +176,17 @@ def publish_new(source, target, parent):
     else:
         raise OSError("当前系统不支持原子无覆盖重命名")
     rename.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_uint]
-    if rename(parent, src, parent, dst, flag) != 0:
+    if rename(source_parent, src, target_parent, dst, flag) != 0:
         error = ctypes.get_errno()
         raise OSError(error, os.strerror(error), str(target))
 
 
-def write_file(path, previous, desired, mode=None, *, home):
-    """使用同目录暂存文件，POSIX 写入经已打开的父目录描述符。"""
+def write_file(path, previous, desired, mode=None, *, home, stage_dir=None):
+    """使用同文件系统暂存文件，POSIX 写入经已打开的目录描述符。"""
     if previous is None and desired is None:
         return
-    with parent_handle(path, home, create=desired is not None) as parent:
+    with ExitStack() as stack:
+        parent = stack.enter_context(parent_handle(path, home, create=desired is not None))
         if read(path, parent=parent) != previous:
             raise ValueError(f"写入前文件已变化：{path}")
         leaf = path if parent is None else path.name
@@ -195,15 +196,18 @@ def write_file(path, previous, desired, mode=None, *, home):
         effective = mode if mode is not None else (
             stat.S_IMODE(os.lstat(leaf, dir_fd=parent).st_mode) if previous is not None else 0o600
         )
-        if parent is None:
-            fd, filename = tempfile.mkstemp(prefix=".himate-stage-", dir=path.parent)
+        temporary = (stage_dir or path.parent) / f".himate-stage-{uuid.uuid4().hex}"
+        source_parent = parent if stage_dir is None else stack.enter_context(
+            parent_handle(temporary, home, create=True)
+        )
+        if source_parent is None:
+            fd, filename = tempfile.mkstemp(prefix=".himate-stage-", dir=temporary.parent)
             temporary = Path(filename)
             source = temporary
         else:
-            temporary = path.with_name(f".himate-stage-{uuid.uuid4().hex}")
             source = temporary.name
             fd = os.open(source, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
-                         0o600, dir_fd=parent)
+                         0o600, dir_fd=source_parent)
         try:
             with os.fdopen(fd, "wb") as stream:
                 if parent is not None:
@@ -214,14 +218,14 @@ def write_file(path, previous, desired, mode=None, *, home):
             if parent is None:
                 inside(path, home)
             if previous is None:
-                publish_new(temporary, path, parent)
+                publish_new(temporary, path, source_parent, parent)
             elif read(path, parent=parent) == previous:
-                os.replace(source, leaf, src_dir_fd=parent, dst_dir_fd=parent)
+                os.replace(source, leaf, src_dir_fd=source_parent, dst_dir_fd=parent)
             else:
                 raise ValueError(f"替换前文件已变化：{path}")
         finally:
             try:
-                os.unlink(source, dir_fd=parent)
+                os.unlink(source, dir_fd=source_parent)
             except FileNotFoundError:
                 pass
 

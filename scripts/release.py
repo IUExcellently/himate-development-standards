@@ -5,7 +5,9 @@ import stat
 import re
 import sys
 
+from detect_project import project_signatures
 from git_access import SOURCE_URL, git, git_root
+from resolve_rules import TOPIC_PATTERNS
 from local_state import NAME, digest, encode, inside, read, read_json, unsafe_link
 
 SHA = re.compile(r"[0-9a-f]{40}")
@@ -29,6 +31,8 @@ def allowed(relative):
 
 def validate_bundle(files):
     manifest = json.loads(files["manifest.json"])
+    if not isinstance(manifest, dict):
+        raise ValueError("候选发行清单必须是对象")
     version = manifest.get("version")
     requires = manifest.get("requires_python")
     if manifest.get("schema_version") != 3 or not isinstance(version, str) or not VERSION.fullmatch(version):
@@ -37,6 +41,7 @@ def validate_bundle(files):
         raise ValueError("候选 Python 版本要求无效")
     if tuple(sys.version_info[:2]) < tuple(requires):
         raise ValueError("当前 Python 版本不满足候选版本要求")
+    project_signatures(manifest)
     if "root" in manifest or "roots" in manifest["project"]:
         raise ValueError("公开清单包含本机注册项")
     if not FRONTMATTER.match(files["SKILL.md"].decode("utf-8")):
@@ -44,13 +49,23 @@ def validate_bundle(files):
     template = files[TEMPLATE].decode("utf-8")
     if not FRONTMATTER.match(template) or sorted(re.findall(r"@@([A-Z_]+)@@", template)) != ["BODY", "DETECT"]:
         raise ValueError("发行入口模板元数据或占位符无效")
-    rules = set(manifest["base"]) | set(manifest["backend"])
-    rules.update(path for group in manifest["tags"].values() for path in group)
-    minimum = rules | {"integrations/SKILL.template.md"} | {f"scripts/{name}.py" for name in RUNTIME}
-    if len(set(manifest["backend"])) != 12 or not minimum <= files.keys():
+    base, backend, tags = (manifest.get(key) for key in ("base", "backend", "tags"))
+    if not isinstance(tags, dict) or not set(TOPIC_PATTERNS) <= tags.keys():
+        raise ValueError("规则索引缺少当前路由所需的标签")
+    groups = (base, backend, *tags.values())
+    if any(not isinstance(group, list) or not group for group in groups):
+        raise ValueError("规则索引条目必须为非空列表")
+    rules = set()
+    for group in groups:
+        for path in group:
+            if not isinstance(path, str) or not path.startswith("standards/") or not allowed(path):
+                raise ValueError("规则索引路径无效")
+            rules.add(path)
+    if not {"standards/core.md", "standards/priority.md"} <= set(base):
+        raise ValueError("规则索引缺少核心和优先级规范")
+    minimum = rules | {TEMPLATE} | {f"scripts/{name}.py" for name in RUNTIME}
+    if len(backend) != 12 or len(set(backend)) != 12 or not minimum <= files.keys():
         raise ValueError("规则或运行文件不完整")
-    if any(not path.startswith("standards/") or not path.endswith(".md") for path in rules):
-        raise ValueError("规则索引路径无效")
     return version
 
 

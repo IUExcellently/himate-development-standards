@@ -4,7 +4,7 @@
 
 ## 交给 AI 安装
 
-> 请从 https://github.com/IUExcellently/himate-development-standards 安装 HiMate Development Standards。按 INSTALL.md 核对官方地址、发行 commit、源码和本机工具。先 dry-run，再在我授权范围内执行用户级安装。只登记我明确给出的 HiMate 工作树。报告安装、客户端发现及规则加载各自的验证结果。
+> 请从 https://github.com/IUExcellently/himate-development-standards 的 `feat/v3-portable-agent-skill` 分支获取 V3 测试版。按 INSTALL.md 核对源码和获准的完整 commit，检出该 commit 后先在隔离用户目录 dry-run。本次只登记我明确给出的隔离 HiMate 工作树。请分别报告安装、客户端发现、自动或主动选择，以及实际规则加载。
 
 ## 支持范围
 
@@ -15,7 +15,7 @@
 | Kiro CLI / IDE | `~/.kiro/skills/himate-development-standards/` | `/himate-development-standards` |
 | Qoder CLI / IDE | `~/.qoder/skills/himate-development-standards/` | `/himate-development-standards` |
 
-面向 macOS、Linux 和 Windows 11，要求 Python 3.10+、Git、支持同目录原子无覆盖重命名的用户文件系统。Windows PowerShell 可用 `py -3`，macOS/Linux 用 `python3`，Git Bash 选实际安装的 Python。各端安装策略与真实验证状态见 [平台说明](integrations/platforms.md)。
+面向 macOS、Linux 和 Windows 11，要求 Python 3.10+、Git、支持同文件系统原子无覆盖重命名的用户文件系统。Windows PowerShell 可用 `py -3`，macOS/Linux 用 `python3`，Git Bash 选实际安装的 Python。各端安装策略见 [平台说明](integrations/platforms.md)，首次验证见 [真实客户端测试](integrations/verification.md)。
 
 ## 使用与维护
 

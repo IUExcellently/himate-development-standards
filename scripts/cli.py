@@ -228,7 +228,7 @@ def main():
             if args.command == "doctor":
                 result["environment"] = environment(local)
             if args.cwd:
-                result["project"] = detect(args.cwd, local)
+                result["project"] = detect(args.cwd, local, diagnose=args.command == "doctor")
         else:
             if args.apply:
                 # 先计算一次无副作用计划；存在冲突时不创建锁或目录。

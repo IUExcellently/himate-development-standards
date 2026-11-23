@@ -8,7 +8,7 @@ import re
 import stat
 
 from integrations import PLATFORMS, entry, legacy_targets
-from local_state import NAME, digest, encode, inside, parent_handle, read, regular_fd, write_file
+from local_state import MAX_FILE, NAME, digest, encode, inside, parent_handle, read, regular_fd, write_file
 from release import allowed
 
 JOURNAL_LIMIT = 16 * 1024 * 1024
@@ -44,9 +44,12 @@ class Plan:
         self.migration = migration
         self.changes = {}
         self.conflicts = []
+        self.journal_cleared = False
 
     def add(self, path, before, after):
         guard(self.local, path, self.migration)
+        if after is not None and len(after) > MAX_FILE:
+            raise ValueError(f"写入内容超过后续读取的大小限制：{path}")
         old = self.changes.get(path)
         if old is not None:
             if old.after != before:
@@ -60,7 +63,7 @@ class Plan:
 
     def summary(self, applied=False):
         return {
-            "applied": applied,
+            "applied": applied or self.journal_cleared,
             "changes": [{
                 "path": str(c.path),
                 "action": "create" if c.before is None else "delete" if c.after is None else "modify",
@@ -138,7 +141,9 @@ def replace_change(local, change, migration, reverse=False):
                 stream.flush()
                 os.fsync(stream.fileno())
         return
-    write_file(change.path, before, after, change.mode, home=local.home)
+    # 进程中断可留下暂存文件。把它隔离于 Skill 入口和不可变发行目录之外。
+    write_file(change.path, before, after, change.mode, home=local.home,
+               stage_dir=local.state / "staging")
 
 
 def clear_journal(local, expected):
@@ -175,6 +180,7 @@ def recover(local, apply):
         for change in pending:
             replace_change(local, change, migration, reverse=True)
         clear_journal(local, raw)
+        plan.journal_cleared = True
     return plan
 
 

@@ -99,3 +99,107 @@ class ProjectTest(unittest.TestCase):
         )
         self.assertTrue(json.loads(result.stdout)["active"])
         self.assertEqual(json.loads(result.stdout)["unrouted"], ["未知/前端.ts"])
+
+    def test_all_signatures_are_required_and_diagnosed_independently(self):
+        from detect_project import MANIFEST
+
+        self.register(self.repo)
+        signatures = MANIFEST["project"]["signatures"]
+        for filename, markers in signatures.items():
+            path = self.repo / filename
+            original = path.read_bytes()
+            for marker in markers:
+                with self.subTest(filename=filename, marker=marker):
+                    try:
+                        path.write_text("\n".join(value for value in markers if value != marker), encoding="utf-8")
+                        self.assertFalse(detect(self.repo, self.local)["active"])
+                        detail = detect(self.repo, self.local, diagnose=True)
+                        self.assertEqual(detail["reason"], f"signature-mismatch:{filename}")
+                        self.assertEqual(len(detail["signatures"]), len(signatures))
+                        failures = [row for row in detail["signatures"] if row["status"] != "matched"]
+                        self.assertEqual(failures, [{"path": filename, "status": "marker-mismatch",
+                                                     "missing_markers": [marker]}])
+                    finally:
+                        path.write_bytes(original)
+        self.assertTrue(detect(self.repo, self.local)["active"])
+
+    def test_renamed_contract_and_tooling_move_remain_inactive_until_reviewed(self):
+        from copy import deepcopy
+        from unittest.mock import patch
+
+        from detect_project import MANIFEST
+
+        self.register(self.repo)
+        contract = self.repo / "docs/contracts/agui-v1/README.md"
+        moved = contract.parent.parent / "agui-v2" / "README.md"
+        moved.parent.mkdir()
+        contract.rename(moved)
+        config = self.repo / "himate-dispatcher/pyproject.toml"
+        config.write_text("[tool.pytest.ini_options]\n", encoding="utf-8")
+        (config.parent / "ruff.toml").write_text("target-version = 'py312'\n", encoding="utf-8")
+        before = capture(self.repo)
+        registry = self.local.registry.read_bytes()
+        failure = detect(self.repo, self.local, diagnose=True)
+        self.assertFalse(failure["active"])
+        self.assertEqual({row["status"] for row in failure["signatures"]},
+                         {"matched", "missing", "marker-mismatch"})
+        self.assertEqual(resolve(self.repo, "AG-UI", local=self.local)["rules"], [])
+
+        reviewed = deepcopy(MANIFEST)
+        signatures = reviewed["project"]["signatures"]
+        signatures["docs/contracts/agui-v2/README.md"] = signatures.pop("docs/contracts/agui-v1/README.md")
+        signatures["himate-dispatcher/ruff.toml"] = ["target-version"]
+        del signatures["himate-dispatcher/pyproject.toml"]
+        with patch("detect_project.MANIFEST", reviewed):
+            self.assertTrue(detect(self.repo, self.local, diagnose=True)["active"])
+        self.assertEqual(registry, self.local.registry.read_bytes())
+        self.assertEqual(before, capture(self.repo))
+
+    def test_doctor_does_not_probe_unregistered_worktree(self):
+        from unittest.mock import patch
+
+        with patch("detect_project.git_root", side_effect=AssertionError("unexpected read")):
+            result = detect(self.repo, self.local, diagnose=True)
+        self.assertFalse(result["active"])
+        self.assertEqual(result["reason"], "unregistered-location")
+        self.assertNotIn("signatures", result)
+
+    def test_signature_file_type_encoding_and_bounded_read(self):
+        self.register(self.repo)
+        readme = self.repo / "README.md"
+        original = readme.read_bytes()
+
+        def first_check():
+            result = detect(self.repo, self.local, diagnose=True)
+            self.assertFalse(result["active"])
+            return result["signatures"][0]["status"]
+
+        readme.write_bytes(b"\xff\xfe")
+        self.assertEqual(first_check(), "unreadable")
+        readme.write_bytes(b" " * (256 * 1024) + original)
+        self.assertEqual(first_check(), "scan-limit")
+        readme.unlink()
+        readme.mkdir()
+        self.assertEqual(first_check(), "not-a-file")
+
+    def test_invalid_signature_manifest_fails_closed(self):
+        from unittest.mock import patch
+
+        self.register(self.repo)
+        with patch.dict("detect_project.MANIFEST", {"project": {"signatures": {}}}):
+            self.assertFalse(detect(self.repo, self.local)["active"])
+            self.assertEqual(detect(self.repo, self.local, diagnose=True)["reason"], "invalid-signatures")
+
+    def test_signature_link_outside_worktree_does_not_activate(self):
+        self.register(self.repo)
+        readme = self.repo / "README.md"
+        outside = self.repo.parent / "outside.md"
+        outside.write_bytes(readme.read_bytes())
+        readme.unlink()
+        try:
+            readme.symlink_to(outside)
+        except OSError as exc:
+            self.skipTest(f"当前文件系统不允许创建测试符号链接：{exc}")
+        result = detect(self.repo, self.local, diagnose=True)
+        self.assertFalse(result["active"])
+        self.assertEqual(result["signatures"][0]["status"], "outside-root")

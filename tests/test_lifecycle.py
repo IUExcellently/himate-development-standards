@@ -262,3 +262,120 @@ class LifecycleTest(unittest.TestCase):
         self.cli("recover", "--apply")
         self.assertEqual(old.read_bytes(), original)
         self.assertFalse(self.local.journal.exists())
+
+    def test_hard_interrupt_during_publish_can_be_retried_after_recovery(self):
+        runner = r"""
+import os
+import runpy
+import sys
+from pathlib import Path
+
+launcher, home, source, revision, destination = sys.argv[1:]
+sys.path.insert(0, str(Path(launcher).parent))
+import local_state
+
+publish = local_state.publish_new
+
+def interrupted(candidate, target, *parents):
+    if target.absolute() == Path(destination):
+        os._exit(91)
+    return publish(candidate, target, *parents)
+
+local_state.publish_new = interrupted
+sys.argv = [launcher, "install", "--home", home, "--source", source,
+            "--revision", revision, "--platform", "codex", "--apply"]
+runpy.run_path(launcher, run_name="__main__")
+"""
+        from release import bundle_path
+
+        for target in (bundle_path(self.local, self.first) / "SKILL.md", entry(self.local, "codex")):
+            with self.subTest(target=target):
+                result = subprocess.run(
+                    [sys.executable, "-B", "-c", runner, str(ROOT / "scripts" / "cli.py"),
+                     str(self.local.home), str(self.version1), self.first, str(target)],
+                    capture_output=True, timeout=25,
+                )
+                self.assertEqual(result.returncode, 91, result.stderr)
+                self.assertTrue(self.local.journal.exists())
+                self.assertTrue(self.cli("recover", "--apply")["applied"])
+                self.install("--platform", "codex", "--apply")
+                self.assertTrue(self.cli("status")["platforms"]["codex"]["matches_receipt"])
+                self.cli("uninstall", "--apply")
+
+    def test_oversized_migration_state_is_rejected_before_writing(self):
+        from local_state import MAX_FILE
+
+        old = self.local.home / "legacy"
+        old.mkdir()
+        self.local.state.mkdir()
+        original = encode({"schema_version": 1, "roots": [], "custom": "a" * (MAX_FILE // 2)})
+        self.local.registry.write_bytes(original)
+        (old / "manifest.json").write_bytes(encode({
+            "schema_version": 1, "project": {"roots": []}, "custom": "b" * (MAX_FILE // 2),
+        }))
+        result = self.cli("migrate", "--legacy", old, "--dry-run", expected=1)
+        self.assertIn("大小限制", result["error"])
+        self.assertEqual(self.local.registry.read_bytes(), original)
+        self.assertEqual({p.name for p in self.local.state.iterdir()}, {"projects.json"})
+
+    def test_candidate_requires_valid_signature_definitions(self):
+        from release import reviewed_source, validate_bundle
+
+        _, bundle = reviewed_source(self.version1, self.first)
+        for signatures in (None, {}, {"README.md": []}, {"../README.md": ["HiMate"]},
+                           {"C:\\external": ["HiMate"]}, {"README.md": [123]}):
+            with self.subTest(signatures=signatures):
+                manifest = json.loads(bundle["manifest.json"])
+                if signatures is None:
+                    del manifest["project"]["signatures"]
+                else:
+                    manifest["project"]["signatures"] = signatures
+                invalid = {**bundle, "manifest.json": encode(manifest)}
+                with self.assertRaisesRegex(ValueError, "指纹"):
+                    validate_bundle(invalid)
+
+    def test_four_platform_lifecycle_preserves_other_skills_and_project_ai_files(self):
+        from snapshot import capture
+
+        repo = project(self.local.home / "synthetic-workspace")
+        for name in (".codex", ".claude", ".kiro", ".qoder", ".trellis", ".cairn"):
+            folder = repo / name
+            folder.mkdir(exist_ok=True)
+            (folder / "existing.md").write_bytes(b"project context")
+        for name in ("AGENTS.md", "CLAUDE.md"):
+            (repo / name).write_bytes(b"project instruction")
+        before = capture(repo)
+
+        sentinels = {}
+        for platform in PLATFORMS:
+            sibling = entry(self.local, platform).parent.with_name("some-other-skill") / "SKILL.md"
+            sentinels[sibling] = f"other {platform}".encode()
+        for config in (".codex/AGENTS.md", ".claude/CLAUDE.md", ".kiro/steering/other.md"):
+            sentinels[self.local.home / config] = b"user-owned configuration\r\n"
+        for file, body in sentinels.items():
+            file.parent.mkdir(parents=True, exist_ok=True)
+            file.write_bytes(body)
+
+        self.cli("register", "--path", repo, "--apply")
+        flags = [value for name in PLATFORMS for value in ("--platform", name)]
+        self.install(*flags, "--apply")
+        doctor = self.cli("doctor", "--cwd", repo)
+        self.assertTrue(doctor["project"]["active"])
+        self.assertEqual(len(doctor["project"]["signatures"]), 6)
+        self.cli("uninstall", "--apply")
+        self.assertEqual({path: path.read_bytes() for path in sentinels}, sentinels)
+        self.assertEqual(before, capture(repo))
+
+    def test_candidate_requires_core_and_router_index(self):
+        from release import reviewed_source, validate_bundle
+
+        _, bundle = reviewed_source(self.version1, self.first)
+        for field, missing in (("base", "standards/priority.md"), ("tags", "java")):
+            with self.subTest(field=field):
+                manifest = json.loads(bundle["manifest.json"])
+                if field == "base":
+                    manifest[field].remove(missing)
+                else:
+                    del manifest[field][missing]
+                with self.assertRaisesRegex(ValueError, "索引"):
+                    validate_bundle({**bundle, "manifest.json": encode(manifest)})
