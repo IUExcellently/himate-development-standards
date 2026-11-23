@@ -1,11 +1,12 @@
 {
-  "schema_version": 1,
-  "root": "/Users/yanzu/Documents/ai-skills/himate-development-standards",
+  "schema_version": 3,
+  "version": "3.0.0",
+  "requires_python": [
+    3,
+    10
+  ],
   "project": {
     "name": "HiMate",
-    "roots": [
-      "/Users/yanzu/Documents/webProject/hichatwb"
-    ],
     "signatures": {
       "README.md": [
         "HiMate",

@@ -6,3 +6,7 @@
 __pycache__/
 *.py[cod]
 .DS_Store
+
+/config/local.json
+/.himate-development-standards/
+/reports/runtime-*.json

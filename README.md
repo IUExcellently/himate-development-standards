@@ -1,39 +1,32 @@
-# HiMate 全局 AI 开发规范
+# HiMate Development Standards
 
-本目录是规范正文唯一来源，面向已登记的 HiMate 工作树。用户级入口在会话内请求项目校验，路由器按任务和文件返回需要读取的规范。项目源码、契约及 AI 工作区保持只读。
+面向已登记的 HiMate Git 工作树的跨平台 Agent Skill。覆盖前端与 CSS/Less、12 项 Java/Spring/PostgreSQL 专题、Python 调度器与 AG-UI/API 契约。只在登记和结构指纹验证通过后应用项目专属规则。
 
-- [Skill 入口](SKILL.md)
-- [项目识别与技术证据](references/project-profile.md)
-- [依赖版本](references/dependency-inventory.md)
-- [Java、前端及调度器证据](references/coding-evidence.md)
-- [官方参考](references/official-references.md)
-- [规范冲突](references/conflict-analysis.md)
-- [分析报告](reports/code-analysis.md)
-- [四平台接入报告](reports/integration-report.md)
-- [验证报告](reports/validation-report.md)
+## 交给 AI 安装
 
-## 从当前工作区运行
+> 请从 https://github.com/IUExcellently/himate-development-standards 安装 HiMate Development Standards。按 INSTALL.md 核对官方地址、发行 commit、源码和本机工具。先 dry-run，再在我授权范围内执行用户级安装。只登记我明确给出的 HiMate 工作树。报告安装、客户端发现及规则加载各自的验证结果。
 
-从本目录执行下列命令，将 `--cwd` 设为目标工作目录。Python 3.10+、Git 和标准库即可。使用 `-B` 禁止生成字节码文件。
+## 支持范围
 
-```sh
-python3 -B scripts/detect_project.py --cwd /Users/yanzu/Documents/webProject/hichatwb
-python3 -B scripts/resolve_rules.py --cwd /Users/yanzu/Documents/webProject/hichatwb --task '修改 Kafka 消费者的幂等逻辑' --path backend/himate-connector/src/main/java/com/hisense/himate/connector/kafka/MessageKafkaConsumer.java
-python3 -B scripts/status.py --cwd /Users/yanzu/Documents/webProject/hichatwb
-```
+| 工具 | 用户级落点 | 手动调用 |
+|---|---|---|
+| Codex | `~/.agents/skills/himate-development-standards/` | `$himate-development-standards` |
+| Claude Code | `~/.claude/skills/himate-development-standards/` | `/himate-development-standards` |
+| Kiro CLI / IDE | `~/.kiro/skills/himate-development-standards/` | `/himate-development-standards` |
+| Qoder CLI / IDE | `~/.qoder/skills/himate-development-standards/` | `/himate-development-standards` |
 
-通过 `--path`、`--tag` 和 `--loaded` 反复传入目标、补充领域、排除本会话已读项。路径路由与语义提示结合，含糊任务先验证实际文件再补选。只分析已登记根，其他 worktree 要单独加入 `manifest.json` 的 canonical roots。
+面向 macOS、Linux 和 Windows 11，要求 Python 3.10+、Git、支持同目录原子无覆盖重命名的用户文件系统。Windows PowerShell 可用 `py -3`，macOS/Linux 用 `python3`，Git Bash 选实际安装的 Python。各端安装策略与真实验证状态见 [平台说明](integrations/platforms.md)。
 
-## 安装和撤销
+## 使用与维护
 
-```sh
-python3 -B scripts/install_global.py --dry-run
-python3 -B scripts/install_global.py --apply
-python3 -B scripts/install_global.py --uninstall --dry-run
-python3 -B scripts/install_global.py --uninstall --apply
-python3 -B scripts/validate.py
-```
+- [安装、更新、回滚、卸载及迁移](INSTALL.md)
+- [AI 自助安装示例](examples/install-with-ai.md)
+- [登记工作树与增量加载](examples/project-registration.md)
+- [Skill 入口](SKILL.md) · [版本说明](CHANGELOG.md)
+- [仓库对比](reports/v3-repository-comparison.md) · [V3 审计与验证](reports/v3-delivery.md)
 
-`--platform` 可限定平台，允许重复。安装前预览，备份和回执在外部主目录 `.install-state/`。撤销保留部署后被其他操作改动的文件并提示处理。命令按本机用户配置和权限运行。已有客户端需要新开会话或刷新 Skill 列表。
+发现阶段只公开名称与描述。模型选择入口后，先核验工作区，再读核心规则和命中专项，最后按需查 `references/`。在 `standards/` 维护统一正文，`manifest.json` 维护规则索引和公开指纹。
 
-Codex 可用 `$himate-development-standards`，Claude Code 与 Qoder 可用 `/himate-development-standards`。Kiro 的用户级 Steering 提供条件入口，也可在 HiMate 会话显式要求读取外部 `SKILL.md`。自动读取正文仍取决于各端模型、有效指令和外部目录读取权限。运行能力分项见接入报告。
+条件匹配、手动调用、文件读取和遵循规范属于不同验证层级。无法发现时先看 `doctor` 输出、当前用户配置目录、同名入口、客户端或自定义 agent 的 Skills 支持，再在新会话核验。外部规范目录不可读时，沿用既有开发规则并报告限制。
+
+项目级 AI 配置、Trellis、Cairn、权限和依赖保持原样。技术优先级、依赖审批和无法消解的冲突按 [优先级规范](standards/priority.md) 处理。
