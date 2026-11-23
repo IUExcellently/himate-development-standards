@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "root": "/Users/yanzu/Documents/ai-skills/himate-development-standards",
+  "project": {
+    "name": "HiMate",
+    "roots": [
+      "/Users/yanzu/Documents/webProject/hichatwb"
+    ],
+    "signatures": {
+      "README.md": [
+        "HiMate",
+        "docs/contracts/agui-v1/"
+      ],
+      "frontend/pnpm-workspace.yaml": [
+        "packages:",
+        "apps/"
+      ],
+      "frontend/package.json": [
+        "pnpm@"
+      ],
+      "backend/pom.xml": [
+        "<java.version>",
+        "himate-agenthub"
+      ],
+      "himate-dispatcher/pyproject.toml": [
+        "[tool.ruff]"
+      ],
+      "docs/contracts/agui-v1/README.md": [
+        "AG-UI"
+      ]
+    }
+  },
+  "base": [
+    "standards/core.md",
+    "standards/priority.md"
+  ],
+  "backend": [
+    "standards/backend/01-java-coding.md",
+    "standards/backend/02-spring-architecture.md",
+    "standards/backend/03-api-design.md",
+    "standards/backend/04-transaction.md",
+    "standards/backend/05-sql-guidelines.md",
+    "standards/backend/06-database-schema.md",
+    "standards/backend/07-connection-pool.md",
+    "standards/backend/08-concurrency.md",
+    "standards/backend/09-cache-messaging.md",
+    "standards/backend/10-security.md",
+    "standards/backend/11-observability.md",
+    "standards/backend/12-testing-review.md"
+  ],
+  "tags": {
+    "frontend": [
+      "standards/frontend.md",
+      "standards/frontend-styles.md"
+    ],
+    "styles": [
+      "standards/frontend.md",
+      "standards/frontend-styles.md"
+    ],
+    "java": [
+      "standards/backend/01-java-coding.md",
+      "standards/backend/02-spring-architecture.md"
+    ],
+    "controller": [
+      "standards/backend/01-java-coding.md",
+      "standards/backend/03-api-design.md",
+      "standards/backend/10-security.md",
+      "standards/api-contracts.md"
+    ],
+    "service": [
+      "standards/backend/01-java-coding.md",
+      "standards/backend/02-spring-architecture.md"
+    ],
+    "sql": [
+      "standards/backend/01-java-coding.md",
+      "standards/backend/04-transaction.md",
+      "standards/backend/05-sql-guidelines.md",
+      "standards/backend/06-database-schema.md",
+      "standards/backend/10-security.md"
+    ],
+    "schema": [
+      "standards/backend/01-java-coding.md",
+      "standards/backend/04-transaction.md",
+      "standards/backend/05-sql-guidelines.md",
+      "standards/backend/06-database-schema.md",
+      "standards/backend/10-security.md"
+    ],
+    "pool": [
+      "standards/backend/01-java-coding.md",
+      "standards/backend/04-transaction.md",
+      "standards/backend/07-connection-pool.md",
+      "standards/backend/11-observability.md",
+      "standards/backend/12-testing-review.md"
+    ],
+    "transaction": [
+      "standards/backend/01-java-coding.md",
+      "standards/backend/04-transaction.md"
+    ],
+    "concurrency": [
+      "standards/backend/01-java-coding.md",
+      "standards/backend/04-transaction.md",
+      "standards/backend/08-concurrency.md"
+    ],
+    "middleware": [
+      "standards/backend/01-java-coding.md",
+      "standards/backend/04-transaction.md",
+      "standards/backend/09-cache-messaging.md"
+    ],
+    "security": [
+      "standards/backend/01-java-coding.md",
+      "standards/backend/10-security.md"
+    ],
+    "observability": [
+      "standards/backend/01-java-coding.md",
+      "standards/backend/11-observability.md"
+    ],
+    "java_test": [
+      "standards/backend/01-java-coding.md",
+      "standards/backend/12-testing-review.md"
+    ],
+    "dispatcher": [
+      "standards/python-dispatcher.md"
+    ],
+    "contract": [
+      "standards/api-contracts.md"
+    ],
+    "dependencies": [
+      "standards/dependency-policy.md"
+    ]
+  }
+}
