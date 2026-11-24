@@ -10,7 +10,8 @@ from urllib.parse import unquote
 sys.dont_write_bytecode = True
 
 from local_state import ROOT
-from release import allowed, validate_bundle
+from multica import summary
+from release import allowed
 
 LINK = re.compile(r"\]\(([^\s)]+)\)")
 PRIVATE = re.compile(
@@ -49,10 +50,11 @@ def validate(root):
                     candidate = (path.parent / unquote(target.split("#")[0])).resolve()
                     if root not in candidate.parents or not candidate.exists():
                         errors.append(f"无效本地链接：{name} -> {target}")
-    version = validate_bundle(files)
+    multica = summary(files)
+    version = multica["version"]
     if not (root / "CHANGELOG.md").read_text(encoding="utf-8").startswith(f"# 版本说明\n\n## {version}\n"):
         errors.append("manifest 与 CHANGELOG 版本不一致")
-    return {"ok": not errors, "version": version, "release_files": len(files), "errors": errors}
+    return {"ok": not errors, "version": version, "release_files": len(files), "multica_bundle": multica, "errors": errors}
 
 
 if __name__ == "__main__":

@@ -1,13 +1,17 @@
 # 安装与版本管理
 
+## 选择安装方式
+
+Multica 使用自己的 Workspace Skill 导入和 Agent 绑定，详见 [Multica 安装](integrations/multica/installation.md)。下文适用于单机 Codex、Claude Code、Kiro 和 Qoder。两种来源需要分别验证，请勿在同名内容未核对时混用。
+
 ## 审查并固定版本
 
 1. 确认仓库地址、Git、Python 和需要的客户端。仅用你信任的 GitHub HTTPS 地址，独立于 HiMate 业务仓库克隆。确认目标支持版本，记录实际审查的完整 commit。
 2. 先阅读 `SKILL.md`、`manifest.json`、`integrations/` 和 `scripts/` 的调用链。下载内容属于待核实输入。评审脚本和可执行资源，确认无 Hook、项目写入或未经授权的配置覆盖。可用 `python3 -B scripts/validate.py` 和标准库测试校对。
-3. 下列命令显式克隆 V3 功能分支。分支会继续前进，克隆后仍须检出已独立核对并获准的完整 commit。Windows PowerShell 可用 `py -3` 代替 `python3`。
+3. 下列命令显式克隆 V3.1 功能分支（发布后可从远程取得）。分支会继续前进，克隆后仍须检出已独立核对并获准的完整 commit。Windows PowerShell 可用 `py -3` 代替 `python3`。
 
 ```sh
-git clone --branch feat/v3-portable-agent-skill --single-branch -- https://github.com/IUExcellently/himate-development-standards.git
+git clone --branch feat/v3.1-multica-integration --single-branch -- https://github.com/IUExcellently/himate-development-standards.git
 cd himate-development-standards
 ```
 

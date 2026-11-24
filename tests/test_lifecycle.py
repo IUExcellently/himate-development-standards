@@ -16,7 +16,7 @@ class InitialContract(unittest.TestCase):
                 [sys.executable, "-B", str(ROOT / "scripts/cli.py"), "doctor", "--home", folder],
                 capture_output=True, encoding="utf-8", check=True,
             )
-            self.assertEqual(json.loads(result.stdout)["version"], "3.0.0")
+            self.assertEqual(json.loads(result.stdout)["version"], "3.1.0")
             self.assertEqual(list(Path(folder).iterdir()), [])
 
     def test_public_project_template_contains_no_registrations(self):
@@ -44,7 +44,7 @@ class LifecycleTest(unittest.TestCase):
         template = cls.source / "integrations" / "SKILL.template.md"
         with template.open("a", encoding="utf-8") as stream:
             stream.write("\n用于验证升级模板。\n")
-        cls.second = bump(cls.source, "3.0.1")
+        cls.second = bump(cls.source, "3.1.1")
         cls.version1 = folder / "old"
         git(folder, "clone", "-q", str(cls.source), str(cls.version1))
         upstream = git(cls.source, "remote", "get-url", "origin")
@@ -118,7 +118,7 @@ class LifecycleTest(unittest.TestCase):
         self.cli("update", "--source", self.source, "--revision", self.second, "--dry-run")
         self.assertEqual(path.read_bytes(), old)
         self.cli("update", "--source", self.source, "--revision", self.second, "--apply")
-        self.assertEqual(self.cli("status")["installed_version"], "3.0.1")
+        self.assertEqual(self.cli("status")["installed_version"], "3.1.1")
         self.assertIn("用于验证升级模板。", path.read_text(encoding="utf-8"))
         self.cli("rollback", "--to", self.first, "--apply")
         self.assertEqual(path.read_bytes(), old)

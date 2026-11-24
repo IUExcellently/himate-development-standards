@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "version": "3.0.0",
+  "version": "3.1.0",
   "requires_python": [
     3,
     10
@@ -89,6 +89,7 @@
     "pool": [
       "standards/backend/01-java-coding.md",
       "standards/backend/04-transaction.md",
+      "standards/backend/06-database-schema.md",
       "standards/backend/07-connection-pool.md",
       "standards/backend/11-observability.md",
       "standards/backend/12-testing-review.md"

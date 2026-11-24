@@ -4,7 +4,7 @@
 
 ## 交给 AI 安装
 
-> 请从 https://github.com/IUExcellently/himate-development-standards 的 `feat/v3-portable-agent-skill` 分支获取 V3 测试版。按 INSTALL.md 核对源码和获准的完整 commit，检出该 commit 后先在隔离用户目录 dry-run。本次只登记我明确给出的隔离 HiMate 工作树。请分别报告安装、客户端发现、自动或主动选择，以及实际规则加载。
+> 请从 https://github.com/IUExcellently/himate-development-standards 的 `feat/v3.1-multica-integration` 分支获取已发布的 V3.1 测试版。分支尚未发布时使用我提供的本地检出。按 INSTALL.md 核对源码和获准的完整 commit，检出该 commit 后先在隔离用户目录 dry-run。本次只登记我明确给出的隔离 HiMate 工作树。请分别报告安装、客户端发现、自动或主动选择，以及实际规则加载。
 
 ## 支持范围
 
@@ -16,6 +16,12 @@
 | Qoder CLI / IDE | `~/.qoder/skills/himate-development-standards/` | `/himate-development-standards` |
 
 面向 macOS、Linux 和 Windows 11，要求 Python 3.10+、Git、支持同文件系统原子无覆盖重命名的用户文件系统。Windows PowerShell 可用 `py -3`，macOS/Linux 用 `python3`，Git Bash 选实际安装的 Python。各端安装策略见 [平台说明](integrations/platforms.md)，首次验证见 [真实客户端测试](integrations/verification.md)。
+
+## Multica Workspace 接入
+
+Multica 管理 Agent、Squad 和 Run，由 Runtime 调用 Codex、Claude Code 等执行工具。V3.1 提供单一 Workspace Skill 与按角色追加的 Agent Instructions，现有四端用户级安装继续兼容。使用固定提交或本地 `.skill` 归档，测试只在独立执行副本中运行。见 [Multica 集成入口](integrations/multica/README.md) 和 [V3.1 集成报告](reports/v3.1-multica.md)。
+
+> 请把 HiMate Development Standards V3.1 接入指定的 Multica Workspace 和 Agent。先审查功能分支已批准的提交、实际 Runtime 与执行目录，生成导入、绑定和 Instructions 的变更计划与预演结果。等我确认后再操作真实 Workspace；HiMate 业务仓库和真实用户级配置保持只读。请分别报告导入、绑定、交付、实际读取及规则遵循。
 
 ## 使用与维护
 
